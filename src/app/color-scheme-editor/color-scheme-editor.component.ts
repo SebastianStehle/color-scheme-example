@@ -14,7 +14,7 @@ interface ColorChannel {
 }
 
 module SVG {
-    const SMOOTHING = .2;
+    const SMOOTHING = .1;
 
     export type Point = { x: number, y: number };
 
@@ -103,6 +103,14 @@ export class ColorSchemeEditorComponent {
                     10,
                     20,
                     10,
+                    40,
+                    10,
+                    20,
+                    10,
+                    40,
+                    10,
+                    20,
+                    10,
                     40
                 ],
                 class: 'red'
@@ -112,7 +120,15 @@ export class ColorSchemeEditorComponent {
                     20,
                     10,
                     40,
-                    70
+                    70,
+                    44,
+                    12,
+                    12,
+                    30,
+                    22,
+                    34,
+                    55,
+                    60
                 ],
                 class: 'green'
             }, {
@@ -126,7 +142,10 @@ export class ColorSchemeEditorComponent {
                     12,
                     54,
                     27,
-                    44
+                    44,
+                    12,
+                    55,
+                    12
                 ],
                 class: 'blue'
             }]
@@ -162,7 +181,7 @@ export class ColorSchemeEditorComponent {
             newY = this.sizeY;
         }
 
-        channel.points[index] = (newY / this.sizeY) * 100;
+        channel.points[index] = 100 - (newY / this.sizeY) * 100;
 
         const element = this.elements[this.channels.indexOf(channel)];
 
@@ -181,7 +200,7 @@ export class ColorSchemeEditorComponent {
             const widthPerPoint = this.sizeX / totalPositions;
     
             const x = Math.round(widthPerPoint * (i + .5));
-            const y = Math.round(this.sizeY * (channel.points[i] / 100));
+            const y = Math.round(this.sizeY * (1 - channel.points[i] / 100));
 
             points.push({ x, y });
         }
