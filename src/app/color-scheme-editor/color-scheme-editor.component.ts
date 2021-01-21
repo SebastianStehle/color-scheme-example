@@ -69,6 +69,10 @@ module SVG {
         const first = points[0];
         const last = points[points.length - 1];
 
+        sorted.sort((lhs, rhs) => {
+            return lhs.x - rhs.x;
+        });
+
         sorted.unshift({
             x: last.x - sizeX,
             y: last.y
@@ -77,10 +81,6 @@ module SVG {
         sorted.push({
             x: first.x + sizeX,
             y: first.y
-        });
-
-        sorted.sort((lhs, rhs) => {
-            return lhs.x - rhs.x;
         });
 
         let path = `M ${sorted[0].x},${sorted[0].y}`;
@@ -223,7 +223,7 @@ export class ColorSchemeEditorComponent {
             newX = this.sizeX;
         }
 
-        channel.points[index].x = +(newY / this.sizeX) * this.xScale;
+        channel.points[index].x = +(newX / this.sizeX) * this.xScale;
         channel.points[index].y = -(newY / this.sizeY) * this.yScale + this.yScale;
 
         const element = this.elements[this.channels.indexOf(channel)];
