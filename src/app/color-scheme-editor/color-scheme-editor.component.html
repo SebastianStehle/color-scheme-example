@@ -17,7 +17,7 @@
                     cdkDragBoundary=".drag-container"
                     (cdkDragMoved)="onMoved(i, channel, $event)"
                     (cdkDragEnded)="onMoveEnded(i, channel, $event)"
-                    [cdkDragFreeDragPosition]="elements[j].points[i + 1]">
+                    [cdkDragFreeDragPosition]="elements[j].points[i]">
                     <div class="point-inner"></div>
                 </div>
             </div>

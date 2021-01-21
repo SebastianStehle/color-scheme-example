@@ -59,16 +59,29 @@ module SVG {
         return `C ${cps.x},${cps.y} ${cpe.x},${cpe.y} ${point.x},${point.y}`
     }
 
-    export const svgPath = (points: Point[]) => {
+    export const svgPath = (points: Point[], sizeX: number) => {
+        if (points.length === 0) {
+            return '';
+        }
+
         const sorted = [...points];
+
+        const first = points[0];
+        const last = points[points.length - 1];
+
+        sorted.unshift({
+            x: last.x - sizeX,
+            y: last.y
+        });
+
+        sorted.push({
+            x: first.x + sizeX,
+            y: first.y
+        });
 
         sorted.sort((lhs, rhs) => {
             return lhs.x - rhs.x;
         });
-
-        if (points.length === 0) {
-            return '';
-        }
 
         let path = `M ${sorted[0].x},${sorted[0].y}`;
 
@@ -152,11 +165,11 @@ export class ColorSchemeEditorComponent {
                 points: [
                     { x: 1, y: 10 },
                     { x: 2, y: 20 },
-                    { x: 3, y: 10 },
-                    { x: 4, y: 40 },
                     { x: 5, y: 10 },
                     { x: 6, y: 20 },
                     { x: 7, y: 10 },
+                    { x: 3, y: 10 },
+                    { x: 4, y: 40 },
                     { x: 8, y: 40 },
                     { x: 9, y: 10 },
                     { x: 10, y: 20 },
@@ -170,9 +183,9 @@ export class ColorSchemeEditorComponent {
         this.selectedChannel = this.scheme.channels[0];
 
         for (const channel of this.scheme.channels) {
-            const points = this.getPoints(channel);
+            const points = this.getRenderPoints(channel);
 
-            this.elements.push({ points, svg: SVG.svgPath(points) });
+            this.elements.push({ points, svg: SVG.svgPath(points, this.sizeX) });
         }
     }
 
@@ -181,12 +194,17 @@ export class ColorSchemeEditorComponent {
     }
 
     public onMoved(index: number, channel: ColorChannel, event: CdkDragEnd) {
-        const points = this.getPoints(channel);
+        const element = this.elements[this.channels.indexOf(channel)];
 
-        points[index + 1].x += event.distance.x;
-        points[index + 1].y += event.distance.y;
+        const points = [...element.points];
+        const point = points[index];
 
-        this.elements[this.channels.indexOf(channel)].svg = SVG.svgPath(points);
+        points[index] = {
+            x: point.x + event.distance.x,
+            y: point.y + event.distance.y
+        };
+
+        this.elements[this.channels.indexOf(channel)].svg = SVG.svgPath(points, this.sizeX);
     }
 
     public onMoveEnded(index: number, channel: ColorChannel, event: CdkDragEnd) {
@@ -210,34 +228,20 @@ export class ColorSchemeEditorComponent {
 
         const element = this.elements[this.channels.indexOf(channel)];
 
-        element.points[index + 1].x = newX;
-        element.points[index + 1].y = newY;
-        element.svg = SVG.svgPath(element.points);
+        element.points[index].x = newX;
+        element.points[index].y = newY;
+
+        element.svg = SVG.svgPath(element.points, this.sizeX);
     }
 
-    private getPoints(channel: ColorChannel) {
+    private getRenderPoints(channel: ColorChannel) {
         const points: SVG.Point[] = [];
 
-        for (let i = 0; i < channel.points.length; i++) {
-            const x = Math.round(this.sizeX * (0 + channel.points[i].x / this.xScale));
-            const y = Math.round(this.sizeY * (1 - channel.points[i].y / this.yScale));
+        for (const point of channel.points) {
+            const x = Math.round(this.sizeX * (0 + point.x / this.xScale));
+            const y = Math.round(this.sizeY * (1 - point.y / this.yScale));
 
             points.push({ x, y });
-        }
-
-        if (points.length > 0) {
-            const first = points[0];
-            const last = points[points.length - 1];
-
-            points.unshift({
-                x: last.x - this.sizeX,
-                y: last.y
-            });
-
-            points.push({
-                x: first.x + this.sizeX,
-                y: first.y
-            });
         }
 
         return points;
