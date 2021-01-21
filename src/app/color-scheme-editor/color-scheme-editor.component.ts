@@ -10,7 +10,7 @@ interface ColorChannel {
 
     class: string;
 
-    points: number[];
+    points: { x: number, y: number }[];
 }
 
 module SVG {
@@ -60,10 +60,25 @@ module SVG {
     }
 
     export const svgPath = (points: Point[]) => {
-        // build the d attributes by looping over the points
-        const d = points.reduce((acc, point, i, a) => i === 0 ? `M ${point.x},${point.y}` : `${acc} ${bezierCommand(point, i, a)}` , '')
+        const sorted = [...points];
 
-        return d;
+        sorted.sort((lhs, rhs) => {
+            return lhs.x - rhs.x;
+        });
+
+        if (points.length === 0) {
+            return '';
+        }
+
+        let path = `M ${sorted[0].x},${sorted[0].y}`;
+
+        for (let i = 1; i < sorted.length; i++) {
+            const point = sorted[i];
+
+            path += ` ${bezierCommand(point, i, sorted)}`
+        }
+
+        return path;
     }
 }
 
@@ -80,6 +95,9 @@ export class ColorSchemeEditorComponent {
 
     public sizeX = 500;
     public sizeY = 300;
+
+    public xScale = 12;
+    public yScale = 100;
 
     public get width() {
         return `${this.sizeX}px`;
@@ -100,52 +118,50 @@ export class ColorSchemeEditorComponent {
             channels: [{
                 name: 'Red',
                 points: [
-                    10,
-                    20,
-                    10,
-                    40,
-                    10,
-                    20,
-                    10,
-                    40,
-                    10,
-                    20,
-                    10,
-                    40
+                    { x: 1, y: 10 },
+                    { x: 2, y: 20 },
+                    { x: 3, y: 10 },
+                    { x: 4, y: 40 },
+                    { x: 5, y: 10 },
+                    { x: 6, y: 100 },
+                    { x: 7, y: 10 },
+                    { x: 8, y: 40 },
+                    { x: 9, y: 10 },
+                    { x: 10, y: 20 },
+                    { x: 11, y: 40 }
                 ],
                 class: 'red'
             }, {
                 name: 'Green',
                 points: [
-                    20,
-                    10,
-                    40,
-                    70,
-                    44,
-                    12,
-                    12,
-                    30,
-                    22,
-                    34,
-                    55,
-                    60
+                    { x: 1, y: 10 },
+                    { x: 2, y: 20 },
+                    { x: 3, y: 10 },
+                    { x: 4, y: 40 },
+                    { x: 5, y: 10 },
+                    { x: 6, y: 20 },
+                    { x: 7, y: 10 },
+                    { x: 8, y: 40 },
+                    { x: 9, y: 10 },
+                    { x: 10, y: 20 },
+                    { x: 11, y: 40 }
                 ],
                 class: 'green'
             }, {
                 name: 'Blue',
                 points: [
-                    30,
-                    25,
-                    12,
-                    50,
-                    12,
-                    12,
-                    54,
-                    27,
-                    44,
-                    12,
-                    55,
-                    12
+                    { x: 1, y: 10 },
+                    { x: 2, y: 20 },
+                    { x: 3, y: 10 },
+                    { x: 4, y: 40 },
+                    { x: 5, y: 10 },
+                    { x: 6, y: 20 },
+                    { x: 7, y: 10 },
+                    { x: 8, y: 40 },
+                    { x: 9, y: 10 },
+                    { x: 10, y: 20 },
+                    { x: 11, y: 40 },
+                    { x: 12, y: 10 },
                 ],
                 class: 'blue'
             }]
@@ -167,12 +183,14 @@ export class ColorSchemeEditorComponent {
     public onMoved(index: number, channel: ColorChannel, event: CdkDragEnd) {
         const points = this.getPoints(channel);
 
+        points[index + 1].x += event.distance.x;
         points[index + 1].y += event.distance.y;
 
-        this.elements[this.channels.indexOf(channel)].svg =  SVG.svgPath(points);
+        this.elements[this.channels.indexOf(channel)].svg = SVG.svgPath(points);
     }
 
     public onMoveEnded(index: number, channel: ColorChannel, event: CdkDragEnd) {
+        let newX = event.source.freeDragPosition.x + event.distance.x;
         let newY = event.source.freeDragPosition.y + event.distance.y;
 
         if (newY < 0) {
@@ -181,31 +199,46 @@ export class ColorSchemeEditorComponent {
             newY = this.sizeY;
         }
 
-        channel.points[index] = 100 - (newY / this.sizeY) * 100;
+        if (newX < 0) {
+            newX = 0;
+        } else if (newX > this.sizeX) {
+            newX = this.sizeX;
+        }
+
+        channel.points[index].x = +(newY / this.sizeX) * this.xScale;
+        channel.points[index].y = -(newY / this.sizeY) * this.yScale + this.yScale;
 
         const element = this.elements[this.channels.indexOf(channel)];
 
+        element.points[index + 1].x = newX;
         element.points[index + 1].y = newY;
         element.svg = SVG.svgPath(element.points);
     }
 
     private getPoints(channel: ColorChannel) {
-        const points: SVG.Point[] = [{
-            x: 0, y: this.sizeY
-        }];
+        const points: SVG.Point[] = [];
 
         for (let i = 0; i < channel.points.length; i++) {
-            const totalPositions = channel.points.length;
-    
-            const widthPerPoint = this.sizeX / totalPositions;
-    
-            const x = Math.round(widthPerPoint * (i + .5));
-            const y = Math.round(this.sizeY * (1 - channel.points[i] / 100));
+            const x = Math.round(this.sizeX * (0 + channel.points[i].x / this.xScale));
+            const y = Math.round(this.sizeY * (1 - channel.points[i].y / this.yScale));
 
             points.push({ x, y });
         }
 
-        points.push({ x: this.sizeX, y: this.sizeY });
+        if (points.length > 0) {
+            const first = points[0];
+            const last = points[points.length - 1];
+
+            points.unshift({
+                x: last.x - this.sizeX,
+                y: last.y
+            });
+
+            points.push({
+                x: first.x + this.sizeX,
+                y: first.y
+            });
+        }
 
         return points;
     }

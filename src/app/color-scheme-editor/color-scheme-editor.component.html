@@ -15,7 +15,6 @@
                 <div *ngFor="let point of channel.points; let i = index" class="point" 
                     cdkDrag 
                     cdkDragBoundary=".drag-container"
-                    cdkDragLockAxis="y"
                     (cdkDragMoved)="onMoved(i, channel, $event)"
                     (cdkDragEnded)="onMoveEnded(i, channel, $event)"
                     [cdkDragFreeDragPosition]="elements[j].points[i + 1]">
